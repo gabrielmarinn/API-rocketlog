@@ -1,0 +1,70 @@
+// Define o cliente gerado pelo Prisma (neste caso, usando Prisma Client para JavaScript)
+generator client {
+  provider = "prisma-client-js" // Define que o cliente será gerado para projetos JavaScript/TypeScript
+}
+
+// Configuração da fonte de dados (banco de dados)
+datasource db {
+  provider = "postgresql" // O tipo do banco de dados utilizado (PostgreSQL)
+  url      = env("DATABASE_URL") // URL de conexão, obtida a partir de uma variável de ambiente
+}
+
+// Definição do enum UserRole, que será utilizado para definir o papel de cada usuário
+enum UserRole {
+  customer  // Cliente padrão
+  sale      // Representante de vendas
+}
+
+// Definição do enum DeliveryStatus, representando o status de uma entrega
+enum DeliveryStatus {
+  processing  // Entrega em processamento
+  shipped     // Entrega despachada
+  delivered   // Entrega concluída
+}
+
+// Modelo para a tabela "users" no banco de dados
+model User {
+  id String @id @default(uuid()) // Chave primária, gerada automaticamente como UUID
+  name String                    // Nome do usuário
+  email String                   // Email do usuário
+  password String                // Senha do usuário
+  role UserRole @default(customer) // Papel do usuário, com valor padrão "customer"
+
+  deliveries Delivery[]          // Relacionamento um-para-muitos: um usuário pode ter várias entregas
+
+  createdAt DateTime @default(now()) @map("created_at") // Data de criação do registro, mapeada para "created_at"
+  updatedAt DateTime? @default(now()) @map("updated_at") // Data de atualização, pode ser opcional, mapeada para "updated_at"
+  
+  @@map ("users") // Mapeia o modelo para a tabela "users" no banco de dados
+}
+
+// Modelo para a tabela "deliveries" no banco de dados
+model Delivery {
+  id String @id @default(uuid()) // Chave primária, gerada automaticamente como UUID
+  userId String @map("user_id")  // ID do usuário relacionado, mapeado para "user_id"
+  description String             // Descrição da entrega
+
+  status DeliveryStatus @default(processing) // Status da entrega, valor padrão é "processing"
+
+  user User @relation(fields: [userId], references: [id]) // Relacionamento: cada entrega pertence a um usuário
+  logs DeliveryLog[] // Relacionamento um-para-muitos: uma entrega pode ter vários logs de entrega
+  
+  createdAt DateTime @default(now()) @map("created_at") // Data de criação do registro, mapeada para "created_at"
+  updatedAt DateTime? @default(now()) @map("updated_at") // Data de atualização, pode ser opcional, mapeada para "updated_at"
+
+  @@map("deliveries") // Mapeia o modelo para a tabela "deliveries" no banco de dados
+}
+
+// Modelo para a tabela "delivery_logs" no banco de dados
+model DeliveryLog {
+  id String @id @default(uuid()) // Chave primária, gerada automaticamente como UUID
+  description String             // Descrição do log de entrega
+  deliveryId String @map("delivery_id") // ID da entrega relacionada, mapeada para "delivery_id"
+
+  delivery Delivery @relation(fields: [deliveryId], references: [id]) // Relacionamento: o log pertence a uma entrega
+
+  createdAt DateTime @default(now()) @map("created_at") // Data de criação do registro, mapeada para "created_at"
+  updatedAt DateTime? @default(now()) @map("updated_at") // Data de atualização, pode ser opcional, mapeada para "updated_at"
+
+  @@map("delivery_logs") // Mapeia o modelo para a tabela "delivery_logs" no banco de dados
+}
